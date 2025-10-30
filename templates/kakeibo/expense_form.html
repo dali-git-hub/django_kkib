@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>家計簿の入力</title>
+</head>
+<body>
+    <h1>家計簿の入力</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">保存する</button>
+    </form>
+    <p><a href="{% url 'expense_list' %}">一覧に戻る</a></p>
+</body>
+</html>

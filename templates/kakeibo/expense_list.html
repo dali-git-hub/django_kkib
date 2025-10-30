@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>家計簿</title>
+</head>
+<body>
+    <h1>家計簿</h1>
+    <p><a href="{% url 'expense_add' %}">+ 追加する</a></p>
+    <table border="1">
+        <tr>
+            <th>日付</th>
+            <th>項目</th>
+            <th>金額</th>
+            <th>操作</th>
+        </tr>
+        {% for e in expenses %}
+        <tr>
+            <td>{{ e.date }}</td>
+            <td>{{ e.item }}</td>
+            <td>{{ e.amount }}円</td>
+            <td>
+                <a href="{% url 'expense_edit' e.pk %}">編集</a>
+                /
+                <a href="{% url 'expense_delete' e.pk %}">削除</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">まだデータがありません</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
