@@ -4,3 +4,11 @@ db.sqlite3
 *.pyc
 .env
 .DS_Store
+
+# ---- secrets / credentials ----
+secrets/
+*.pem
+*.p12
+*.pfx
+*service-account*.json
+*.credentials.json

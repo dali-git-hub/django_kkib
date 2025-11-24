@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}ホーム{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root { --c-expense:#e35d6a; --c-income:#2fa36b; --c-net:#2b6cb0; }
+  body.senior-mode{ font-size:1.125rem; }
+  .card-stat .value{ font-size:1.6rem; font-weight:700; }
+  .progress{ height:14px; }
+  .progress.ok    .progress-bar{ background-color:#2fa36b; }     /* 80%未満 */
+  .progress.warn  .progress-bar{ background-color:#f0ad4e; }     /* 80%以上100%未満 */
+  .progress.over  .progress-bar{ background-color:#e35d6a; }     /* 予算超過 */
+  .cal-cell{ border:1px solid #ddd; min-height:70px; padding:.25rem; font-size:.9rem; }
+  .cal-cell .day{ font-weight:700; }
+  .cal-cell.has .day-total{ font-size:.8rem; }
+  .cal-cell[role="button"] { cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="btn-group">
+    <a class="btn btn-outline-secondary" href="?month={{ prev_month|date:'Y-m' }}">« 前月</a>
+    <span class="btn btn-light disabled">{{ current_month|date:"Y年n月" }}</span>
+    <a class="btn btn-outline-secondary" href="?month={{ next_month|date:'Y-m' }}">翌月 »</a>
+    <a class="btn btn-outline-secondary ms-2" href="?month={{ current_month|date:'Y-m' }}">今月</a>
+  </div>
+  <div class="btn-group">
+      <a class="btn btn-sm btn-outline-primary"
+         href="{% url 'kakeibo:expense_add' %}?date={{ cell.date|date:'Y-m-d' }}">+支出</a>
+      <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle dropdown-toggle-split"
+          data-bs-toggle="dropdown" aria-expanded="false"></button>
+      <ul class="dropdown-menu">
+        <li>
+          <a class="dropdown-item"
+            href="{% url 'kakeibo:expense_add' %}?date={{ cell.date|date:'Y-m-d' }}">手入力で追加</a>
+        </li>
+        <li>
+          <a class="dropdown-item"
+            href="{% url 'kakeibo:receipt_upload' %}?date={{ cell.date|date:'Y-m-d' }}">レシートから追加（OCR）</a>
+        </li>
+      </ul>
+    <a class="btn btn-outline-primary" href="{% url 'kakeibo:income_add' %}">＋収入</a>
+    <a class="btn btn-outline-secondary" href="{% url 'kakeibo:budget_list' %}?month={{ current_month|date:'Y-m' }}">予算</a>
+    <a class="btn btn-outline-secondary" href="{% url 'kakeibo:analytics' %}?month={{ current_month|date:'Y-m' }}">分析</a>
+  </div>
+
+</div>
+
+<div class="row g-3">
+
+    <!-- 今月の支出一覧（最新10件） -->
+  <div class="col-12">
+    <div class="card"><div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="card-title mb-0">今月の支出（最新10件）</h6>
+        <a class="btn btn-sm btn-outline-secondary"
+          href="{% url 'kakeibo:expense_list' %}?month={{ current_month|date:'Y-m' }}">すべて見る</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead><tr>
+            <th style="width:120px">日付</th>
+            <th>項目</th>
+            <th style="width:120px" class="text-end">金額</th>
+            <th style="width:140px">費目</th>
+          </tr></thead>
+          <tbody>
+          {% for e in recent_expenses %}
+            <tr>
+              <td>{{ e.date|date:"Y-m-d" }}</td>
+              <td>{{ e.item }}</td>
+              <td class="text-end">{{ e.amount|intcomma }}円</td>
+              <td>{{ e.category.name|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-muted">今月の支出はまだありません。</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- カレンダー（月表示：月〜日） -->
+  <div class="col-12">
+    <div class="card"><div class="card-body">
+      <h6 class="card-title">カレンダー</h6>
+      <div class="row row-cols-7 g-1 text-center mb-1 text-muted small">
+        <div class="col">月</div><div class="col">火</div><div class="col">水</div>
+        <div class="col">木</div><div class="col">金</div><div class="col">土</div><div class="col">日</div>
+      </div>
+  {% for wk in cal_rows %}
+    <div class="row row-cols-7 g-1">
+      {% for cell in wk %}
+        {% if cell %}
+          <div class="col cal-cell{% if cell.has %} has{% endif %}"
+              data-day="{{ cell.date|date:'Y-m-d' }}"
+              role="button" tabindex="0">
+            <div class="d-flex justify-content-between">
+              <span class="day">{{ cell.date|date:'j' }}</span>
+              <div class="text-end">
+                {% if cell.inc %}<div class="text-success small">+{{ cell.inc|intcomma }}円</div>{% endif %}
+                {% if cell.exp %}<div class="text-danger small">-{{ cell.exp|intcomma }}円</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="col cal-cell"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endfor %}
+    </div></div>
+  </div>
+  <div class="col-md-4"><div class="card card-stat"><div class="card-body">
+    <div class="text-muted">今月の支出</div>
+    <div class="value" style="color:var(--c-expense)">{{ expense_total|default:0|intcomma }}円</div>
+    {% if overall_budget %}<div class="small text-muted">予算 {{ overall_budget|intcomma }}円</div>{% endif %}
+  </div></div></div>
+
+  <div class="col-md-4"><div class="card card-stat"><div class="card-body">
+    <div class="text-muted">今月の収入</div>
+    <div class="value" style="color:var(--c-income)">{{ income_total|default:0|intcomma }}円</div>
+  </div></div></div>
+
+  <div class="col-md-4"><div class="card card-stat"><div class="card-body">
+    <div class="text-muted">今月の収支</div>
+    <div class="value {% if net_total < 0 %}text-danger{% endif %}">{{ net_total|default:0|intcomma }}円</div>
+  </div></div></div>
+
+  <div class="col-md-5"><div class="card"><div class="card-body">
+    <h6 class="card-title">カテゴリ内訳</h6>
+    <canvas id="pie" height="220"></canvas>
+  </div></div></div>
+
+  <div class="col-md-7"><div class="card"><div class="card-body">
+    <h6 class="card-title">直近6か月の推移</h6>
+    <canvas id="line" height="220"></canvas>
+  </div></div></div>
+
+  <div class="col-12"><div class="card"><div class="card-body">
+    <h6 class="card-title">予算の進捗</h6>
+    {% if cat_progress %}
+      {% for r in cat_progress %}
+        <div class="d-flex justify-content-between align-items-end mb-1">
+          <div class="small"><strong>{{ r.name }}</strong></div>
+          <div class="small text-muted">
+            利用額：{{ r.spent|intcomma }}円
+            {% if r.budget %}
+              ／ 利用可能：あと {{ r.remain|intcomma }}円（予算 {{ r.budget|intcomma }}円）
+            {% else %}
+              ／ 予算設定なし
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- JS が幅と色を入れる -->
+        <div class="progress progress-budget mb-2"
+            data-spent="{{ r.spent }}"
+            data-budget="{{ r.budget|default_if_none:'' }}"
+            style="height:14px">
+          <div class="progress-bar" role="progressbar"
+              aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted">予算が未設定です。「予算」ページから設定しましょう。</div>
+    {% endif %}     
+  </div></div></div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  // ---------- 円グラフ ----------
+  const pieLabels = {{ pie_labels|default:'[]'|safe }};
+  const pieValues = {{ pie_values|default:'[]'|safe }};
+  const pieEl = document.getElementById('pie');
+  if (pieEl && pieLabels.length && pieValues.length) {
+    new Chart(pieEl, {
+      type: 'doughnut',
+      data: { labels: pieLabels, datasets: [{ data: pieValues }] },
+      options: { plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+
+  // ---------- 折れ線（支出/収入） ----------
+  const last6Labels = {{ last6_labels|default:'[]'|safe }};
+  const last6Exp    = {{ last6_exp|default:'[]'|safe }};
+  const last6Inc    = {{ last6_inc|default:'[]'|safe }};
+  const lineEl = document.getElementById('line');
+  if (lineEl && last6Labels.length) {
+    new Chart(lineEl, {
+      type: 'line',
+      data: {
+        labels: last6Labels,
+        datasets: [
+          { label: '支出', data: last6Exp, tension: .3, borderColor: '#e35d6a' },
+          { label: '収入', data: last6Inc, tension: .3, borderColor: '#2fa36b' }
+        ]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+  }
+
+  // ---------- 予算進捗バー（<=70% 緑 / <=100% 黄 / >100% 赤） ----------
+  document.querySelectorAll('.progress-budget').forEach(p => {
+    const spent  = Number(p.dataset.spent || 0);
+    const budget = Number(p.dataset.budget || 0);
+    const bar    = p.querySelector('.progress-bar');
+
+    let pct = 100;
+    if (budget > 0) pct = Math.min(100, Math.round(spent / budget * 100));
+
+    bar.style.width = pct + '%';
+    bar.textContent = (budget > 0) ? pct + '%' : spent.toLocaleString() + '円';
+
+    bar.classList.remove('bg-success','bg-warning','bg-danger','bg-secondary');
+    if (!budget)           bar.classList.add('bg-secondary');
+    else if (pct <= 70)    bar.classList.add('bg-success');
+    else if (pct <= 100)   bar.classList.add('bg-warning');
+    else                   bar.classList.add('bg-danger');
+  });
+
+    document.querySelectorAll('.cal-cell[data-day]').forEach(el => {
+    el.addEventListener('click', () => {
+      const d = el.dataset.day;
+      document.getElementById('qa-date').textContent = d;
+      document.getElementById('qa-exp').href = "{% url 'kakeibo:expense_add' %}?date=" + d;
+      document.getElementById('qa-inc').href = "{% url 'kakeibo:income_add' %}?date=" + d;
+      new bootstrap.Modal(document.getElementById('quickAdd')).show();
+    });
+  });
+</script>
+
+<!-- Quick Add モーダル -->
+<div class="modal fade" id="quickAdd" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">この日に追加</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2 text-muted small">日付: <span id="qa-date"></span></div>
+        <div class="d-grid gap-2">
+          <a id="qa-exp" class="btn btn-primary">＋支出を追加</a>
+          <a id="qa-inc" class="btn btn-outline-primary">＋収入を追加</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

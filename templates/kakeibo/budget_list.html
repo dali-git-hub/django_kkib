@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}予算管理{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">予算管理</h1>
+
+<div class="btn-group mb-3">
+  <a class="btn btn-outline-secondary"
+     href="?month={{ prev_month|date:'Y-m' }}">« 前月</a>
+  <span class="btn btn-light disabled">{{ current_month|date:"Y年n月" }}</span>
+  <a class="btn btn-outline-secondary"
+     href="?month={{ next_month|date:'Y-m' }}">翌月 »</a>
+  {% now "Y-m" as ym %}
+  <a class="btn btn-outline-secondary ms-2" href="?month={{ ym }}">今月</a>
+  <a class="btn btn-primary ms-3"
+     href="{% url 'kakeibo:budget_add' %}?month={{ current_month|date:'Y-m' }}">＋ 追加</a>
+</div>
+
+<table class="table table-striped align-middle">
+  <thead>
+    <tr>
+      <th>対象月</th>
+      <th>費目</th>
+      <th class="text-end">予算(円)</th>
+      <th class="text-center">操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in budgets %}
+    <tr>
+      <td>{{ b.month|date:"Y年n月" }}</td>
+      <td>{{ b.category.name|default:"全体" }}</td>
+      <td class="text-end">{{ b.amount|intcomma }}</td>
+      <td class="text-center">
+        <a class="btn btn-sm btn-primary" href="{% url 'kakeibo:budget_edit' b.pk %}?month={{ current_month|date:'Y-m' }}">編集</a>
+        <a class="btn btn-sm btn-outline-danger" href="{% url 'kakeibo:budget_delete' b.pk %}?month={{ current_month|date:'Y-m' }}">削除</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4" class="text-muted">この月の予算は未設定です。</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

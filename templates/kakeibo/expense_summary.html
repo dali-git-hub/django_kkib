@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}家計簿 — 月次集計{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">月次集計</h1>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+  <div class="col-md-3">{{ filter_form.start_date.label_tag }} {{ filter_form.start_date }}</div>
+  <div class="col-md-3">{{ filter_form.end_date.label_tag }} {{ filter_form.end_date }}</div>
+  <div class="col-md-3">{{ filter_form.q.label_tag }} {{ filter_form.q }}</div>
+  <div class="col-md-3">
+    <button class="btn btn-primary" type="submit">絞り込む</button>
+    <a class="btn btn-outline-secondary" href="{% url 'kakeibo:expense_summary' %}">リセット</a>
+  </div>
+</form>
+
+<table class="table table-striped align-middle">
+  <thead>
+    <tr>
+      <th style="width: 200px;">月</th>
+      <th class="text-end" style="width: 120px;">件数</th>
+      <th class="text-end" style="width: 160px;">合計</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.month|date:"Y年n月" }}</td>
+      <td class="text-end">{{ r.count|intcomma }} 件</td>
+      <td class="text-end">{{ r.total|intcomma }} 円</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="3" class="text-muted">データがありません</td></tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <th>総合計</th><th></th>
+      <th class="text-end">{{ grand_total|intcomma }} 円</th>
+    </tr>
+  </tfoot>
+</table>
+
+<nav aria-label="pager">
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?{% if qs_params %}{{ qs_params }}&{% endif %}page={{ page_obj.previous_page_number }}">前へ</a>
+      </li>
+    {% else %}<li class="page-item disabled"><span class="page-link">前へ</span></li>{% endif %}
+    <li class="page-item disabled"><span class="page-link">ページ {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?{% if qs_params %}{{ qs_params }}&{% endif %}page={{ page_obj.next_page_number }}">次へ</a>
+      </li>
+    {% else %}<li class="page-item disabled"><span class="page-link">次へ</span></li>{% endif %}
+  </ul>
+</nav>
+{% endblock %}

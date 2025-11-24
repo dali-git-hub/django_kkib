@@ -1,18 +1,14 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>削除確認</title>
-</head>
-<body>
-    <h1>削除してもよいですか？</h1>
-    <p>日付：{{ object.date }} / 項目：{{ object.item }} / 金額：{{ object.amount }}円</p>
-
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit">はい、削除します</button>
-    </form>
-
-    <p><a href="{% url 'expense_list' %}">キャンセルして一覧に戻る</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}削除確認{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">削除してもよいですか？</h1>
+<p class="mb-3">
+  <span class="badge text-bg-light">{{ object.date }}</span>
+  {{ object.item }} / {{ object.amount }}円
+</p>
+<form method="post" class="d-flex gap-2">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">はい、削除します</button>
+  <a class="btn btn-outline-secondary" href="{% url 'kakeibo:expense_list' %}">キャンセル</a>
+</form>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}収入一覧{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">収入</h1>
+<p><a class="btn btn-primary btn-sm" href="{% url 'kakeibo:income_add' %}">追加</a></p>
+<table class="table table-striped">
+  <thead><tr><th>日付</th><th>収入源</th><th class="text-end">金額</th><th></th></tr></thead>
+  <tbody>
+  {% for i in incomes %}
+    <tr>
+      <td>{{ i.date|date:"Y-m-d" }}</td>
+      <td>{{ i.source }}</td>
+      <td class="text-end">{{ i.amount }}円</td>
+      <td class="text-nowrap">
+        <a class="btn btn-sm btn-primary" href="{% url 'kakeibo:income_edit' i.pk %}">編集</a>
+        <a class="btn btn-sm btn-outline-danger" href="{% url 'kakeibo:income_delete' i.pk %}">削除</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="text-muted">まだデータがありません</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -11,10 +11,23 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+from django.contrib.messages import constants as message_constants
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = BASE_DIR / ".env"
+VISION_CREDENTIALS_FILE = BASE_DIR / "secrets/service-account.json"
+load_dotenv(BASE_DIR / ".env")
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
+# 2) GOOGLE_APPLICATION_CREDENTIALS を絶対パス化して環境に反映（Vision 用）
+cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+if cred_path:
+    abs_path = str((BASE_DIR / cred_path).resolve()) if not cred_path.startswith("/") else cred_path
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = abs_path
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -37,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'kakeibo' #2025/10/30追加
 ]
 
@@ -59,6 +73,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -121,3 +136,22 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Bootstrapの色クラスに合わせる
+MESSAGE_TAGS = {
+    message_constants.DEBUG: 'secondary',
+    message_constants.INFO: 'info',
+    message_constants.SUCCESS: 'success',
+    message_constants.WARNING: 'warning',
+    message_constants.ERROR: 'danger',
+}
+
+# 推論の挙動をここで制御
+CATEGORY_AI = {
+    "enabled": False,          # まずは False で運用→後で True に
+    "provider": "openai",      # 例: "openai" / "bedrock" / "vertex" など
+    "threshold": 0.65,         # クラウドの最小信頼度（0.0-1.0想定）
+    # クラウドのラベルをアプリのカテゴリ名に写像したい場合に使う
+    "label_map": {             # 例: {"FOOD": "食費", "RENT": "住宅"} など
+    },
+}

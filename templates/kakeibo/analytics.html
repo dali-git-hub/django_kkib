@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}家計簿 — 分析{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">分析ダッシュボード</h1>
+
+<div class="btn-group mb-3">
+  <a class="btn btn-outline-secondary"
+   href="{% url 'kakeibo:budget_list' %}?month={{ current_month|default:today|date:'Y-m' }}">予算</a>
+  <a class="btn btn-outline-secondary"
+     href="?{% if base_qs %}{{ base_qs }}&{% endif %}month={{ prev_month|date:'Y-m' }}">« 前月</a>
+  <span class="btn btn-light disabled">{{ current_month|date:"Y年n月" }}</span>
+  <a class="btn btn-outline-secondary"
+     href="?{% if base_qs %}{{ base_qs }}&{% endif %}month={{ next_month|date:'Y-m' }}">翌月 »</a>
+  <a class="btn btn-outline-secondary ms-2"
+     href="?month={{ today|date:'Y-m' }}">今月</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="card-title mb-3">カテゴリ内訳（円）</h6>
+        <canvas id="catChart" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="card-title mb-3">直近6か月の推移（棒）</h6>
+        <canvas id="trendChart" height="240"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-body">
+    <h6 class="card-title">サマリ</h6>
+    <div id="summaryBox" class="small text-muted">
+      読み込み中…
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body">
+    <h6 class="card-title">予算 vs 実績</h6>
+    <div id="budget-summary"></div>
+  </div>
+</div>
+
+<!-- 将来のクラウド提案（試作） -->
+<div class="card mt-3" id="cloud-card" style="display:none">
+  <div class="card-body">
+    <h6 class="card-title">クラウド提案（試作）</h6>
+    <ul id="cloudList" class="mb-0"></ul>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(async () => {
+  // 現在のURLに ?month=YYYY-MM があればそのまま /api/analytics に引き渡す
+  const search = new URLSearchParams(location.search);
+  const month = search.get('month');
+  const apiUrl = "{% url 'kakeibo:analytics_api' %}" || "/api/analytics/";
+  const url = month ? `${apiUrl}?month=${month}` : apiUrl;
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  // ---- サマリ表示 ----
+  const p = (x) => (x === null || x === undefined) ? '-' :
+                    (x > 0 ? `+${(x*100).toFixed(1)}%` : `${(x*100).toFixed(1)}%`);
+  const box = document.getElementById('summaryBox');
+  box.innerHTML = `
+    <div>対象月: <strong>${data.month}</strong></div>
+    <div>合計: <strong>${data.total.toLocaleString()} 円</strong></div>
+    <div>前月比: ${data.mom.total.toLocaleString()} 円 → <strong>${p(data.mom.pct)}</strong></div>
+    <div>前年同月比: ${data.yoy.total.toLocaleString()} 円 → <strong>${p(data.yoy.pct)}</strong></div>
+  `;
+
+  // ---- 円グラフ ----
+  const labels = data.by_category.map(r => r.name);
+  const values = data.by_category.map(r => r.total);
+  new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: values }] },
+    options: { plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // ---- 棒グラフ ----
+  const months = data.last_6m.map(r => r.month);
+  const totals = data.last_6m.map(r => r.total);
+  new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: { labels: months, datasets: [{ label: '合計(円)', data: totals }] },
+    options: { scales: { y: { beginAtZero: true } } }
+  });
+
+   /* ===== ここから追記：予算 vs 実績 ===== */
+  (function renderBudget() {
+    const bs = document.getElementById('budget-summary');
+    if (!bs) return;
+
+    const overall = (data && data.budget && data.budget.overall) ?? null;
+    if (overall) {
+      const pct = Math.min(100, Math.round((data.total / overall) * 100));
+      bs.innerHTML = `
+        <div class="mb-2">
+          今月予算: ${overall.toLocaleString()}円 /
+          実績: ${data.total.toLocaleString()}円（${pct}%）
+        </div>
+        <div class="progress">
+          <div class="progress-bar" role="progressbar" style="width:${pct}%"></div>
+        </div>`;
+    } else {
+      bs.textContent = '今月の予算は未設定です（管理画面で登録してください）。';
+    }
+  })();
+  /* ===== ここまで追記：予算 vs 実績 ===== */
+
+  /* ===== ここから追記：将来のクラウド提案（試作） ===== */
+  (function renderCloud() {
+    const card = document.getElementById('cloud-card');
+    const list = document.getElementById('cloudList');
+    const suggestions = Array.isArray(data.cloud_suggestions) ? data.cloud_suggestions : [];
+    if (!card || !list || suggestions.length === 0) return;
+    card.style.display = '';
+    list.innerHTML = suggestions.map(s => `<li>${s}</li>`).join('');
+  })();
+  /* ===== ここまで追記：将来のクラウド提案（試作） ===== */
+})();
+</script>
+{% endblock %}

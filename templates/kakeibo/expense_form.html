@@ -1,16 +1,111 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>家計簿の入力</title>
-</head>
-<body>
-    <h1>家計簿の入力</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">保存する</button>
-    </form>
-    <p><a href="{% url 'expense_list' %}">一覧に戻る</a></p>
-</body>
-</html>
+{% extends 'base.html' %}
+{% block title %}家計簿 - 入力{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">家計簿の入力</h1>
+
+{% if form.errors %}
+  <div class="alert alert-danger">入力内容を確認してください。</div>
+{% endif %}
+
+<form method="post" class="vstack gap-3" novalidate>
+  {% csrf_token %}
+
+  <div class="row g-3">
+    <div class="col-md-3">
+      {{ form.date.label_tag }} {{ form.date }}
+      {% for err in form.date.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-5">
+      {{ form.item.label_tag }} {{ form.item }}
+      {% for err in form.item.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+      <div class="form-text mt-1">
+        <span id="cat-suggest" class="badge bg-secondary d-none" role="button" title="クリックで適用"></span>
+        <button id="apply-cat" class="btn btn-sm btn-outline-primary d-none ms-2" type="button">候補を適用</button>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      {{ form.amount.label_tag }} {{ form.amount }}
+      {% for err in form.amount.errors %}<div class="invalid-feedback d-block">{{ err }}</div>{% endfor %}
+    </div>
+
+    <div class="col-md-2">
+      {{ form.category.label_tag }} {{ form.category }}
+    </div>
+  </div>
+
+  <div>
+    <button class="btn btn-primary" type="submit">保存する</button>
+    <a class="btn btn-outline-secondary" href="{% url 'kakeibo:expense_list' %}">一覧に戻る</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  // フィールド取得（Djangoのid命名規則）
+  const item  = document.getElementById('id_item');
+  const memo  = document.getElementById('id_memo');   // なければ null でOK
+  const cat   = document.getElementById('id_category');
+  const badge = document.getElementById('cat-suggest');
+  const apply = document.getElementById('apply-cat');
+  const url   = "{% url 'kakeibo:guess_category_api' %}";
+
+  // CSRF
+  function getCookie(name){
+    const v = ('; ' + document.cookie).split('; ' + name + '=');
+    if (v.length === 2) return v.pop().split(';').shift();
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  async function guess(){
+    const text = (item?.value || '').trim();
+    const m    = (memo?.value || '').trim();
+    if(!text){ badge.classList.add('d-none'); apply.classList.add('d-none'); return; }
+
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{
+        'X-CSRFToken': csrftoken,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type':'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        item: text,
+        memo: m,
+        category: cat?.value || ''
+      }).toString()
+    });
+    const data = await res.json();
+
+    if (data && data.suggested_id){
+      badge.textContent = '候補: ' + data.suggested_name + '（クリックで適用）';
+      badge.dataset.catId = data.suggested_id;
+      badge.classList.remove('d-none');
+      apply.classList.remove('d-none');
+    } else {
+      badge.classList.add('d-none');
+      apply.classList.add('d-none');
+    }
+  }
+
+  // 項目入力後に推定
+  item?.addEventListener('blur',   guess);
+  item?.addEventListener('change', guess);
+
+  // 候補を適用
+  function applyCandidate(){
+    const id = badge.dataset.catId;
+    if(id && cat){ cat.value = String(id); }
+    badge.classList.add('d-none');
+    apply.classList.add('d-none');
+  }
+  badge?.addEventListener('click', applyCandidate);
+  apply?.addEventListener('click', applyCandidate);
+})();
+</script>
+{% endblock %}
+

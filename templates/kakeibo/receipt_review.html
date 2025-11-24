@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}OCR確認{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="h5 mb-3">読み取り結果の確認</h1>
+
+  {% if image_url %}
+    <div class="mb-3">
+      <img src="{{ image_url }}" alt="レシート" style="max-width:100%;height:auto;">
+    </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.management_form }}
+    <table class="table">
+      <thead><tr><th>項目</th><th style="width:160px;">金額</th><th style="width:220px;">費目</th></tr></thead>
+      <tbody>
+      {% for f in form %}
+        <tr>
+          <td>{{ f.item }}</td>
+          <td>{{ f.amount }}</td>
+          <td>{{ f.category }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <button class="btn btn-primary" type="submit">この内容で登録</button>
+    <a class="btn btn-outline-secondary" href="{% url 'kakeibo:receipt_upload' %}">やり直す</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}予算の削除{% endblock %}
+
+{% block content %}
+<h1 class="h5 mb-3">予算の削除</h1>
+<p>この予算を削除しますか？</p>
+<ul>
+  <li>対象月: {{ object.month|date:"Y年n月" }}</li>
+  <li>費目: {{ object.category.name|default:"（全体）" }}</li>
+  <li>金額: {{ object.amount }}</li>
+</ul>
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn-danger">削除する</button>
+  <a class="btn btn-outline-secondary" href="{% url 'kakeibo:budget_list' %}?month={{ object.month|date:'Y-m' }}">キャンセル</a>
+</form>
+{% endblock %}

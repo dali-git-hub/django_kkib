@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}予算{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">{% if view.object %}予算を編集{% else %}予算を追加{% endif %}</h1>
+
+<form method="post" class="row g-3">
+  {% csrf_token %}
+
+  <div class="col-md-3">{{ form.month.label_tag }} {{ form.month }}</div>
+  <div class="col-md-4">{{ form.category.label_tag }} {{ form.category }}</div>
+  <div class="col-md-3">{{ form.amount.label_tag }} {{ form.amount }}</div>
+
+  {% if form.non_field_errors %}
+    <div class="col-12 alert alert-warning mt-2">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="col-12 mt-3">
+    <button class="btn btn-primary" type="submit">保存</button>
+    <a class="btn btn-outline-secondary"
+       href="{% url 'kakeibo:budget_list' %}?month={{ current_month|date:'Y-m' }}">戻る</a>
+  </div>
+</form>
+{% endblock %}

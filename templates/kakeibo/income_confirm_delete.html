@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}収入の削除{% endblock %}
+{% block content %}
+<h1 class="h5">この収入を削除しますか？</h1>
+<p>{{ object.date|date:"Y-m-d" }} / {{ object.source }} / {{ object.amount }}円</p>
+<form method="post">{% csrf_token %}
+  <button class="btn btn-danger" type="submit">削除</button>
+  <a class="btn btn-outline-secondary" href="{% url 'kakeibo:income_list' %}">キャンセル</a>
+</form>
+{% endblock %}

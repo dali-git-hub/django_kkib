@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}レシート取り込み{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">レシート取り込み</h1>
+
+<form method="post"
+      action="{% url 'kakeibo:receipt_upload' %}"
+      enctype="multipart/form-data"
+      class="vstack gap-3">
+  {% csrf_token %}
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label">日付</label>
+      {{ form.date }}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">レシート画像</label>
+      {{ form.image }}
+    </div>
+  </div>
+  <div>
+    <button class="btn btn-primary" type="submit">解析して追加</button>
+    <a class="btn btn-outline-secondary" href="{% url 'kakeibo:expense_list' %}">一覧へ</a>
+  </div>
+</form>
+{% endblock %}
