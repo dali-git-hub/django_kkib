@@ -46,3 +46,13 @@
 - OCR処理（Google Vision API / AWS Rekognition）組み込みによる精度の向上
 - グラフ表示など、家計の傾向を直感的に把握できるダッシュボードの追加
 - テストコードやLintツールの導入
+
+## 動作環境とセットアップ
+
+- Python 3.x
+- Django 〇.x
+
+```bash
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
