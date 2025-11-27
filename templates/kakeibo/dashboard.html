@@ -56,7 +56,7 @@
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h6 class="card-title mb-0">今月の支出（最新10件）</h6>
         <a class="btn btn-sm btn-outline-secondary"
-          href="{% url 'kakeibo:expense_list' %}?month={{ current_month|date:'Y-m' }}">すべて見る</a>
+          href="{% url 'kakeibo:expense_list' %}?month={{ current_month|date:'Y-m' }}&view=all">すべて見る</a>
       </div>
       <div class="table-responsive">
         <table class="table table-sm align-middle mb-0">

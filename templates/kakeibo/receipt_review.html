@@ -1,32 +1,82 @@
 {% extends "base.html" %}
-{% block title %}OCR確認{% endblock %}
 {% block content %}
-<div class="container">
-  <h1 class="h5 mb-3">読み取り結果の確認</h1>
+<h3>レシート確認</h3>
 
-  {% if image_url %}
-    <div class="mb-3">
-      <img src="{{ image_url }}" alt="レシート" style="max-width:100%;height:auto;">
-    </div>
-  {% endif %}
+{% if image_url %}
+  <div class="mb-3">
+    <img src="{{ image_url }}" alt="preview" style="max-width:100%;height:auto;border:1px solid #eee">
+  </div>
+{% endif %}
 
-  <form method="post">
-    {% csrf_token %}
-    {{ form.management_form }}
-    <table class="table">
-      <thead><tr><th>項目</th><th style="width:160px;">金額</th><th style="width:220px;">費目</th></tr></thead>
-      <tbody>
-      {% for f in form %}
-        <tr>
-          <td>{{ f.item }}</td>
-          <td>{{ f.amount }}</td>
-          <td>{{ f.category }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    <button class="btn btn-primary" type="submit">この内容で登録</button>
-    <a class="btn btn-outline-secondary" href="{% url 'kakeibo:receipt_upload' %}">やり直す</a>
-  </form>
-</div>
+<form method="post">
+  {% csrf_token %}
+  <table class="table align-middle">
+    <thead>
+      <tr>
+        <th style="width:55%">項目</th>
+        <th style="width:15%">金額</th>
+        <th style="width:22%">費目</th>
+        <th style="width:8%"></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for f in form.forms %}
+      <tr>
+        <td>{{ f.item }}{{ f.raw_text }}</td>
+        <td>{{ f.amount }}</td>
+        <td class="position-relative">
+          {{ f.category }}
+          <button type="button" class="btn btn-sm btn-outline-secondary ms-2 js-resuggest">再判定</button>
+        </td>
+        <td>
+          {% if form.can_delete %}
+            <label class="btn btn-sm btn-outline-danger">
+              {{ f.DELETE }} 削除
+            </label>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" class="text-muted">候補がありません。戻って再アップロードしてください。</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="d-flex gap-2">
+    <button class="btn btn-primary">この内容で登録</button>
+    <a class="btn btn-light" href="{% url 'kakeibo:receipt_upload' %}">やり直す</a>
+  </div>
+</form>
+
+<script>
+(function(){
+  const csrf = document.querySelector('input[name=csrfmiddlewaretoken]').value;
+  const url  = "{% url 'kakeibo:guess_category_api' %}";
+
+  // 「項目」入力変更や「再判定」クリックで分類を再取得
+  function askSuggest(row){
+    const itemInput = row.querySelector('input[name$="-item"]');
+    const select    = row.querySelector('select[name$="-category"]');
+    if(!itemInput || !select) return;
+    const fd = new FormData();
+    fd.append('item', itemInput.value || '');
+    fd.append('memo', '');
+    fd.append('category', select.value || '');
+
+    fetch(url, { method:'POST', headers:{'X-CSRFToken': csrf}, body: fd })
+      .then(r => r.json()).then(data=>{
+        if(data.ok && data.suggested_id){
+          select.value = data.suggested_id;
+        }
+      }).catch(()=>{});
+  }
+
+  document.querySelectorAll('tr').forEach(tr=>{
+    const item = tr.querySelector('input[name$="-item"]');
+    if(item){ item.addEventListener('change', ()=>askSuggest(tr)); }
+    const btn  = tr.querySelector('.js-resuggest');
+    if(btn){ btn.addEventListener('click', (e)=>{ e.preventDefault(); askSuggest(tr); }); }
+  });
+})();
+</script>
 {% endblock %}
