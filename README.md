@@ -3,6 +3,10 @@
 マスコミ業界でDX関連業務などに携わりながら、業務外で開発している家計簿アプリです。  
 日々のレシートを撮影・登録して家計を見える化し、成長次第で消費動向分析まで可能なプラットフォーム化、さらには公共政策のアジェンダ提供にもつなげていくことを目標にしています。
 
+This is a personal household accounting web application built with Django.
+I am developing it outside of work to learn full-stack web development and
+data-driven analysis for public policy.
+
 ## 技術スタック
 
 - 言語: Python
