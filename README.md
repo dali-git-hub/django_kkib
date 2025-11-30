@@ -15,7 +15,7 @@ data-driven analysis for public policy.
 - テンプレート: Django Templates（`templates/` 配下）
 - その他: Git / GitHub / ChatGPT を活用して開発
 
-今後は Docker・AWS などを使ったデプロイも学習中。
+Docker・AWS などを使ったデプロイも学習中。
 
 ## 主な機能（開発中を含む）
 
